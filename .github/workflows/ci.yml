@@ -91,11 +91,14 @@ jobs:
             fi
           done
 
+      - name: Prepare ZAP report directory
+        run: mkdir -p zap-report
+
       - name: Run OWASP ZAP scan using Docker
         run: |
           docker run --rm \
             -v ${{ github.workspace }}/zap-report:/zap/wrk/:rw \
-            -t owasp/zap2docker-stable zap-full-scan.py \
+            -t owasp/zap2docker-weekly zap-full-scan.py \
             -t http://host.docker.internal:3000 \
             -r zap_report.html
 
