@@ -19,15 +19,13 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t $REPO_NAME:$IMAGE_TAG ."
-                }
+                sh "docker build -t $REPO_NAME:$IMAGE_TAG ."
             }
         }
 
         stage('Push to ECR') {
             steps {
-                script {
+                withCredentials([usernamePassword(credentialsId: 'aws-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     sh """
                         aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
                         docker tag $REPO_NAME:$IMAGE_TAG $ECR_URL/$REPO_NAME:$IMAGE_TAG
