@@ -3,14 +3,13 @@ const mongoose = require('mongoose');
 const app = require('../index');
 const Item = require('../models/item');
 
-const mongoURI = 'mongodb://admin:password@localhost:27017/testdb?authSource=admin';
+// Updated URI to use container hostname (my-mongo)
+const mongoURI = 'mongodb://admin:password@my-mongo:27017/testdb?authSource=admin';
 
 beforeAll(async () => {
-  // Connect to MongoDB before tests run
-  await mongoose.connect(mongoURI, {
-    // options no longer needed in latest versions
-  });
-});
+  // Increase timeout in case MongoDB takes time to connect
+  await mongoose.connect(mongoURI);
+}, 10000); // 10 seconds timeout
 
 afterAll(async () => {
   // Clean up DB connection after all tests
