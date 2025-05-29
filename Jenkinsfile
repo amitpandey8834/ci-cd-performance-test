@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('Clone Repo') {
             steps {
-                git 'https://github.com/amitpandey8834/ci-cd-performance-test.git'
+                echo 'Repo already checked out in SCM stage'
             }
         }
 
