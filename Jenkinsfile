@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:18'   // Node.js official image with npm
-            args '-u root'    // run as root (optional, helpful for permissions)
-        }
-    }
+    agent any  // Run on Jenkins host with docker daemon available
 
     environment {
         AWS_REGION = 'ap-south-1'
@@ -16,6 +11,12 @@ pipeline {
 
     stages {
         stage('Install & Test') {
+            agent {
+                docker {
+                    image 'node:18'
+                    args '-u root'
+                }
+            }
             steps {
                 sh 'npm install'
                 sh 'npm test || echo "Tests failed but continuing..."'
@@ -24,21 +25,18 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t $REPO_NAME:$IMAGE_TAG ."
-                }
+                // Runs on Jenkins host — docker daemon must be accessible here
+                sh "docker build -t $REPO_NAME:$IMAGE_TAG ."
             }
         }
 
         stage('Push to ECR') {
             steps {
-                script {
-                    sh """
-                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
-                        docker tag $REPO_NAME:$IMAGE_TAG $ECR_URL/$REPO_NAME:$IMAGE_TAG
-                        docker push $ECR_URL/$REPO_NAME:$IMAGE_TAG
-                    """
-                }
+                sh """
+                    aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
+                    docker tag $REPO_NAME:$IMAGE_TAG $ECR_URL/$REPO_NAME:$IMAGE_TAG
+                    docker push $ECR_URL/$REPO_NAME:$IMAGE_TAG
+                """
             }
         }
 
