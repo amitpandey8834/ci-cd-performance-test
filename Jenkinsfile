@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:18'  // Official Node.js image with npm preinstalled
-            args '-v /var/run/docker.sock:/var/run/docker.sock'  // Mount Docker socket so we can build/run Docker inside the container
-        }
-    }
+    agent any
 
     environment {
         IMAGE_NAME = "nodejs-staging-app"
@@ -38,9 +33,9 @@ pipeline {
         stage('Run Container') {
             steps {
                 sh '''
-                docker stop nodeapp || true
-                docker rm nodeapp || true
-                docker run -d --name nodeapp --network host $IMAGE_NAME
+                    docker stop nodeapp || true
+                    docker rm nodeapp || true
+                    docker run -d --name nodeapp -p 3000:3000 $IMAGE_NAME
                 '''
             }
         }
