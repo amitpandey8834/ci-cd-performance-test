@@ -1,9 +1,18 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const helmet = require('helmet'); // <-- Added helmet
 const Item = require('./models/item');
 
 const app = express();
+
+// Apply security headers
+app.use(helmet());
+
+// Disable Express identifying header
+app.disable('x-powered-by');
+
+// Parse JSON request bodies
 app.use(bodyParser.json());
 
 // MongoDB connection URI (using Docker MongoDB with auth)
