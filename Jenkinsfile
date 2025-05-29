@@ -6,16 +6,10 @@ pipeline {
         ECR_URL = '851725583741.dkr.ecr.ap-south-1.amazonaws.com'
         REPO_NAME = 'ci-cd-performance-test'
         IMAGE_TAG = "${BUILD_NUMBER}"
-        EC2_IP = '43.204.148.166'  // Use your EC2 public IP
+        EC2_IP = '43.204.148.166'  // Your EC2 public IP
     }
 
     stages {
-        stage('Clone Repo') {
-            steps {
-                echo 'Repo already checked out in SCM stage'
-            }
-        }
-
         stage('Install & Test') {
             steps {
                 sh 'npm install'
