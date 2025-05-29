@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'node:18'   // Node.js official image with npm
+            args '-u root'    // run as root (optional, helpful for permissions)
+        }
+    }
 
     environment {
         AWS_REGION = 'ap-south-1'
@@ -19,13 +24,15 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t $REPO_NAME:$IMAGE_TAG ."
+                script {
+                    sh "docker build -t $REPO_NAME:$IMAGE_TAG ."
+                }
             }
         }
 
         stage('Push to ECR') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                script {
                     sh """
                         aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
                         docker tag $REPO_NAME:$IMAGE_TAG $ECR_URL/$REPO_NAME:$IMAGE_TAG
