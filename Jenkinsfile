@@ -14,13 +14,17 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                sh '''
+                    docker run --rm -v "$PWD":/app -w /app node:18 npm install
+                '''
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh 'npm test || true'
+                sh '''
+                    docker run --rm -v "$PWD":/app -w /app node:18 npm test || true
+                '''
             }
         }
 
