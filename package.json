@@ -1,18 +1,19 @@
 {
   "name": "integration-testing-api",
   "version": "1.0.0",
-  "description": "",
+  "description": "A simple Express API with MongoDB and integration tests",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "test": "jest"
   },
   "keywords": [],
-  "author": "",
+  "author": "Your Name",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^2.2.0",
     "express": "^5.1.0",
+    "helmet": "^8.1.0",
     "mongoose": "^8.15.1"
   },
   "devDependencies": {

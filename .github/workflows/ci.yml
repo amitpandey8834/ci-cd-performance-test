@@ -107,3 +107,46 @@ jobs:
         with:
           name: zap-report
           path: zap-report/zap_report.html
+
+  zap_scan:
+    name: ZAP Scan
+    runs-on: ubuntu-latest
+    needs: security-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Start API in background
+        run: |
+          nohup npm start &
+          echo "Waiting for API to be ready on port 3000..."
+          for i in {1..30}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "API is up!"
+              break
+            else
+              echo "Waiting..."
+              sleep 2
+            fi
+          done
+
+      - name: Create ZAP report directory
+        run: mkdir -p zap-report
+
+      - name: Run ZAP full scan
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/zap-report:/zap/wrk \
+            -u zap \
+            -w /zap/wrk \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-full-scan.py -t http://host.docker.internal:3000 -r zap_report.html
