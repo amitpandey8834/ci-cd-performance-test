@@ -2,55 +2,61 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "nodejs-staging-app"
+        AWS_REGION = 'ap-south-1'
+        ECR_URL = '851725583741.dkr.ecr.ap-south-1.amazonaws.com'
+        REPO_NAME = 'ci-cd-performance-test'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        EC2_IP = '43.204.148.166'  // Use your EC2 public IP
     }
 
     stages {
-        stage('Checkout') {
+        stage('Clone Repo') {
             steps {
-                checkout scm
+                git 'https://github.com/amitpandey8834/ci-cd-performance-test.git'
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Install & Test') {
             steps {
-                sh '''
-                    docker run --rm -v "$PWD":/app -w /app node:18 npm install
-                '''
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                sh '''
-                    docker run --rm -v "$PWD":/app -w /app node:18 npm test || true
-                '''
+                sh 'npm install'
+                sh 'npm test || echo "Tests failed but continuing..."'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME .'
+                script {
+                    sh "docker build -t $REPO_NAME:$IMAGE_TAG ."
+                }
             }
         }
 
-        stage('Run Container') {
+        stage('Push to ECR') {
             steps {
-                sh '''
-                    docker stop nodeapp || true
-                    docker rm nodeapp || true
-                    docker run -d --name nodeapp -p 3000:3000 $IMAGE_NAME
-                '''
+                script {
+                    sh """
+                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
+                        docker tag $REPO_NAME:$IMAGE_TAG $ECR_URL/$REPO_NAME:$IMAGE_TAG
+                        docker push $ECR_URL/$REPO_NAME:$IMAGE_TAG
+                    """
+                }
             }
         }
-    }
 
-    post {
-        success {
-            echo '✅ Successfully deployed to staging!'
-        }
-        failure {
-            echo '❌ Build or deployment failed.'
+        stage('Deploy to EC2') {
+            steps {
+                sshagent(credentials: ['ec2-ssh-key']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ubuntu@$EC2_IP << EOF
+                        docker login -u AWS -p \$(aws ecr get-login-password --region $AWS_REGION) $ECR_URL
+                        docker stop $REPO_NAME || true
+                        docker rm $REPO_NAME || true
+                        docker pull $ECR_URL/$REPO_NAME:$IMAGE_TAG
+                        docker run -d --name $REPO_NAME -p 3000:3000 $ECR_URL/$REPO_NAME:$IMAGE_TAG
+                        EOF
+                    """
+                }
+            }
         }
     }
 }
