@@ -25,10 +25,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
 
@@ -67,10 +67,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
 
@@ -97,10 +97,11 @@ jobs:
       - name: Run OWASP ZAP scan using Docker
         run: |
           docker run --rm \
-            -v ${{ github.workspace }}/zap-report:/zap/wrk/:rw \
-            -t owasp/zap2docker-weekly zap-full-scan.py \
-            -t http://host.docker.internal:3000 \
-            -r zap_report.html
+            -v ${{ github.workspace }}/zap-report:/zap/wrk:rw \
+            -u zap \
+            -w /zap/wrk \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-full-scan.py -t http://host.docker.internal:3000 -r zap_report.html
 
       - name: Upload ZAP report as artifact
         uses: actions/upload-artifact@v4
