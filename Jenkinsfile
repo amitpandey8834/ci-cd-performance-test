@@ -1,5 +1,5 @@
 pipeline {
-    agent any  // Run on Jenkins host with docker daemon available
+    agent any  // Run on Jenkins host with Docker daemon available
 
     environment {
         AWS_REGION = 'ap-south-1'
@@ -7,7 +7,7 @@ pipeline {
         REPO_NAME = 'ci-cd-performance-test'
         IMAGE_TAG = "${BUILD_NUMBER}"
         EC2_IP = '43.204.148.166'  // Your EC2 public IP
-        MONGO_URI = 'mongodb://admin:password@mongodb:27017/testdb?authSource=admin'
+        MONGO_URI = 'mongodb://admin:password@my-mongo:27017/testdb?authSource=admin'
     }
 
     stages {
@@ -15,23 +15,14 @@ pipeline {
             agent {
                 docker {
                     image 'node:18'
-                    args '-u root --network host'  // Added network host to access host services
-                }
-            }
-            services {
-                mongodb: {
-                    image: 'mongo:latest'
-                    env: ['MONGO_INITDB_ROOT_USERNAME=admin', 'MONGO_INITDB_ROOT_PASSWORD=password']
-                    ports: ['27017:27017']
+                    // Connect to the Docker network where MongoDB is running
+                    args '--network jenkins_network -u root'
                 }
             }
             steps {
                 sh 'npm install'
-                // Update test files to use the correct MongoDB URI
-                sh """
-                    sed -i "s|mongodb://.*|$MONGO_URI|g" test/integration.test.js
-                    npm test || echo "Tests failed but continuing..."
-                """
+                // Run tests with MONGO_URI environment variable passed
+                sh 'MONGO_URI=$MONGO_URI npm test || echo "Tests failed but continuing..."'
             }
         }
 
@@ -73,8 +64,8 @@ pipeline {
                             unzip awscliv2.zip
                             sudo ./aws/install
                         fi
-                        
-                        # Docker operations
+
+                        # Login and deploy Docker container
                         docker login -u AWS -p \$(aws ecr get-login-password --region $AWS_REGION) $ECR_URL
                         docker stop $REPO_NAME || true
                         docker rm $REPO_NAME || true
@@ -89,7 +80,7 @@ pipeline {
 
     post {
         always {
-            cleanWs()  // Clean workspace after build
+            cleanWs()  // Clean workspace after the build
         }
     }
 }
